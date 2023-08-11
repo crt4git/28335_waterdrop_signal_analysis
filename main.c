@@ -1,163 +1,122 @@
 #include "DSP2833x_Project.h"
 #include "stdlib.h"
 
-//内部
+//内部函数
 interrupt void adc_isr(void);
 interrupt void timer_isr(void);
-int min(int a, int b);
-Uint16 getThrehold(float32 V1_IN, float32 V2_IN);
-
-//
+Uint16 getThrehold(float32 V_IN);
+//相关变量、参数
 #define bufferSize 1000
-
+#define filteringValue 90
 Uint16 ConversionCount;
 float32 Voltage1[bufferSize];
 float32 V1;
 float32 V2;
 float32 Voltage2[bufferSize];
-float32 temp;
-float32 tempArr[bufferSize];
-Uint16 threholdCount;
 float32 threhold;
-int flagADC;
+Uint16 threholdCount;
+float32 cmpValue;
+int k;
 
 int main(void)
 {
-   //初始化
-   InitSysCtrl();
+    //初始化
+    InitSysCtrl();
+    DINT;
+    //初始化外设中断管理
+    InitPieCtrl();
+    InitPieVectTable();
+    IER = 0x0000;
+    IFR = 0x0000;
 
-   InitCpuTimers();
+    EALLOW;
+    PieVectTable.TINT0=&timer_isr;
+    PieVectTable.ADCINT = &adc_isr;
+    EDIS;
 
-   EALLOW;
-   #if (CPU_FRQ_150MHZ)
+    PieCtrlRegs.PIEIER1.bit.INTx6=1;
+    PieCtrlRegs.PIEIER1.bit.INTx7=1;
+
+    IER |= M_INT1;
+    EINT;
+    ERTM;
+    //变量初始化
+    ConversionCount = 0;
+    k=0;
+    //初始化相关模块
+    InitCpuTimers();
+    InitGpio();
+    InitAdc();
+
+    //AD配置（ 详细配置在DSP2833x_Adc.c的InitAdc() ）
+    EALLOW;
+    #if (CPU_FRQ_150MHZ)
      #define ADC_MODCLK 0x3
-   #endif
-   #if (CPU_FRQ_100MHZ)
+    #endif
+    #if (CPU_FRQ_100MHZ)
      #define ADC_MODCLK 0x2
-   #endif
-   EDIS;
+    #endif
+    EDIS;
 
-   InitGpio();
+    EALLOW;
+    SysCtrlRegs.HISPCP.all = ADC_MODCLK;
+    EDIS;
+    //定时器0配置
+    ConfigCpuTimer(&CpuTimer0, 150, 5);
+    StartCpuTimer0();
 
-   EALLOW;
+    while(1){
 
-   GpioCtrlRegs.GPAMUX1.bit.GPIO0=0;
-   GpioCtrlRegs.GPAMUX1.bit.GPIO1=0;
-   GpioCtrlRegs.GPADIR.all=0x0003;
-   EDIS;
-
-
-   EALLOW;
-   SysCtrlRegs.HISPCP.all = ADC_MODCLK;
-   EDIS;
-
-   DINT;
-
-   InitPieCtrl();
-
-   IER = 0x0000;
-   IFR = 0x0000;
-
-   InitPieVectTable();
-
-   EALLOW;
-   PieVectTable.TINT0=&timer_isr;
-   PieVectTable.ADCINT = &adc_isr;
-   EDIS;
-
-   InitAdc();
-
-   PieCtrlRegs.PIEIER1.bit.INTx6=1;
-   PieCtrlRegs.PIEIER1.bit.INTx7=1;
-   IER |= M_INT1;
-   EINT;
-   ERTM;
-   ConfigCpuTimer(&CpuTimer0, 150, 4);
-   StartCpuTimer0();
-
-
-   ConversionCount = 0;
-
-
-//   AdcRegs.ADCTRL1.bit.SEQ_CASC=1;
-//   AdcRegs.ADCTRL1.bit.ACQ_PS=1;
-//   AdcRegs.ADCMAXCONV.all = 0x0000;
-//   AdcRegs.ADCCHSELSEQ1.bit.CONV00 = 0x0;
-//
-//
-//   AdcRegs.ADCTRL2.bit.EPWM_SOCA_SEQ1 = 0;
-//   AdcRegs.ADCTRL2.bit.INT_ENA_SEQ1 = 1;
-//   AdcRegs.ADCTRL2.bit.INT_MOD_SEQ1=0;
-//
-//   AdcRegs.ADCTRL3.bit.ADCCLKPS=0x0000;
-//
-//   AdcRegs.ADCTRL3.bit.SMODE_SEL=1;
-//   EPwm1Regs.TBCTL.bit.CLKDIV=0;
-//   EPwm1Regs.TBCTL.bit.HSPCLKDIV=0;
-//   EPwm1Regs.ETSEL.bit.SOCAEN = 1;
-//   EPwm1Regs.ETSEL.bit.SOCASEL = 4;
-//   EPwm1Regs.ETPS.bit.SOCAPRD = 1;
-//   EPwm1Regs.CMPA.half.CMPA = 0x0080;
-//   EPwm1Regs.TBPRD = 300;
-//   EPwm1Regs.TBCTL.bit.CTRMODE = 0;
-
-
-
-
-   for(;;)
-   {
-
-   }
+    }
 
 }
 
 
 void  adc_isr(void)
 {
-  Voltage1[ConversionCount] = AdcRegs.ADCRESULT0 >>4;
-  Voltage2[ConversionCount] = AdcRegs.ADCRESULT1 >>4;
+    Voltage1[ConversionCount] = AdcRegs.ADCRESULT0 >>4;
+    Voltage2[ConversionCount] = AdcRegs.ADCRESULT1 >>4;
 
-  if(Voltage1[ConversionCount]>temp){
-//     threholdCount++;
-     GpioDataRegs.GPASET.bit.GPIO0=1;
-  }else{
-//     threholdCount=0;
-     GpioDataRegs.GPACLEAR.bit.GPIO0=1;
-  }
-//  if(threholdCount>5){
-//
-//  }else if(threholdCount==0){
-//
-//  }
+    //每隔3000个采样点取值
+    if(k==3){
+      V1=Voltage1[ConversionCount];
+    }else if(k==6){
+      V2=Voltage1[ConversionCount];
+      k=0;
+    }
+    //计算最小值，得到阈值
+    threhold=getThrehold(Voltage1[ConversionCount]);
+
+    //阈值比较，过滤输出脉冲
+    if(Voltage1[ConversionCount]>threhold){
+        threholdCount++;
+    }else{
+        threholdCount=0;
+    }
+    if(threholdCount>5){
+        GpioDataRegs.GPASET.bit.GPIO0=1;
+    }else if(threholdCount==0){
+        GpioDataRegs.GPACLEAR.bit.GPIO0=1;
+    }
+
+    //清空缓存区
+    if(ConversionCount == bufferSize){
+        ConversionCount = 0;
+        k++;
+    }
+    else{
+        ConversionCount++;
+    }
 
 
-
-  AdcRegs.ADCTRL2.bit.RST_SEQ1 = 1;
-  AdcRegs.ADCST.bit.INT_SEQ1_CLR = 1;
-  PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
-
-  return;
+    AdcRegs.ADCTRL2.bit.RST_SEQ1 = 1;
+    AdcRegs.ADCST.bit.INT_SEQ1_CLR = 1;
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
 
 void timer_isr(){
 
-    if(ConversionCount == bufferSize)
-    {
-     ConversionCount = 0;
-    }
-    else{
-      ConversionCount++;
-    }
-    if(flagADC==0){
-        V1=Voltage1[ConversionCount];
-        flagADC=1;
-    }else{
-        V2=Voltage1[ConversionCount];
-        flagADC=0;
-    }
-
-    temp=getThrehold(V1, V2);
-    tempArr[ConversionCount]=temp;
+    //AD开始转换信号
     AdcRegs.ADCTRL2.bit.SOC_SEQ1=1;
 
     PieCtrlRegs.PIEACK.all=PIEACK_GROUP1;
@@ -165,23 +124,22 @@ void timer_isr(){
     CpuTimer0Regs.TCR.bit.TRB=1;
 }
 
-int min(int a, int b) {
-    return (a < b) ? a : b;
-}
 
-Uint16 getThrehold(float32 V1_IN, float32 V2_IN)
+Uint16 getThrehold(float32 V_IN)
 {
-    float32 sum=0;
-    int j=0;
+    //j和sum为了取阈值平均值，减小阈值波动范围
+    float32 threholdOut=0;
+    //每隔一个缓存周期更新一下比较基准值，跟踪电压
     if(ConversionCount==0){
-        threhold=V1_IN;
-        sum=0;
-        j=0;
+        //V1和V2是每隔3000个采样点取值，因为这样同时取到波峰概率小
+        //如果V1和V2在隔这么远取值还相差不大，说明大概率是低电平
+        //把V1和V2更低的那个更新为当前基准值
+        if(abs(V1-V2)<50)
+        cmpValue=V1<V2? V1:V2;
     }
-    sum+=threhold<min(V1_IN, V2_IN)? threhold:min(V1_IN, V2_IN);
-    j++;
+    threholdOut=V_IN<cmpValue? V_IN:cmpValue;//比较当前电压和基准值
 
-    return sum/j+130;
+    return threholdOut+filteringValue;
 
 }
 

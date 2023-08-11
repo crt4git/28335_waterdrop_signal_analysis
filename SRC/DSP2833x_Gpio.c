@@ -43,7 +43,7 @@ InitGpio(void)
     GpioCtrlRegs.GPCMUX1.all = 0x0000;     // GPIO functionality GPIO64-GPIO79
     GpioCtrlRegs.GPCMUX2.all = 0x0000;     // GPIO functionality GPIO80-GPIO95
 
-    GpioCtrlRegs.GPADIR.all = 0x0000;      // GPIO0-GPIO31 are inputs
+    GpioCtrlRegs.GPADIR.all = 0x0003;      // GPIO0-GPIO31 are inputs
     GpioCtrlRegs.GPBDIR.all = 0x0000;      // GPIO32-GPIO63 are inputs   
     GpioCtrlRegs.GPCDIR.all = 0x0000;      // GPI064-GPIO95 are inputs
 
