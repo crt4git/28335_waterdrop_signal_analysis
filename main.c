@@ -5,30 +5,46 @@
 #include "DSP2833x_Project.h"
 #include "stdlib.h"
 
-//内部函数
+#define Uint8 unsigned char
+#define slaveAddr 0xFF //从机地址
+
+//ad相关函数
 interrupt void adc_isr(void);
+float getThrehold(float V_IN); //阈值跟踪
+
+//定时器0中断
 interrupt void timer_isr(void);
-float32 getThrehold(float32 V_IN);
-//相关变量、参数
-#define bufferSize 1000
-#define filteringValue 90
+
+//ecap1中断函数
+interrupt void ecap_isr();
+
+//ad变量
+#define bufferSize 200 //缓存区大小
+#define filteringValue 90 //滤波值
+Uint32 wPeriod, averageTime;
 Uint16 conversionCount;
-float32 voltage1[bufferSize];
-float32 V1;
-float32 V2;
-float32 voltage2[bufferSize];
-float32 threhold;
-Uint16 threholdCount;
-float32 cmpValue;
-//值处理辅助变量
+float voltage1[bufferSize]; //转换1
+float voltage2[bufferSize]; //转换2
+float threhold; //阈值
+Uint16 threholdCount; //阈值消抖
+
+float cmpValue; //阈值跟踪基准值
 int k,i;
-float32 sum;
+float sumCmpValue;
+float V1; //每隔600采样点取样
+float V2;
+
+//i2c变量
+
+//ecap
 
 
 
 int main(void)
 {
-    //初始化
+
+
+    //初始化系统
     InitSysCtrl();
     DINT;
     //初始化外设中断管理
@@ -39,24 +55,29 @@ int main(void)
 
     EALLOW;
     PieVectTable.TINT0=&timer_isr;
-    PieVectTable.ADCINT = &adc_isr;
+    PieVectTable.ADCINT=&adc_isr;
+    PieVectTable.ECAP2_INT=&ecap_isr;
     EDIS;
 
     PieCtrlRegs.PIEIER1.bit.INTx6=1;
     PieCtrlRegs.PIEIER1.bit.INTx7=1;
+    PieCtrlRegs.PIEIER4.bit.INTx2=1;
 
     IER |= M_INT1;
+    IER |= M_INT4;
     EINT;
     ERTM;
     //变量初始化
     conversionCount = 0;
     k=0;
     i=0;
-    sum=0;
+    sumCmpValue=0;
+
     //初始化相关模块
     InitCpuTimers();
     InitGpio();
     InitAdc();
+    InitECap();
     //AD配置（ 详细配置在DSP2833x_Adc.c的InitAdc() ）
     EALLOW;
     #if (CPU_FRQ_150MHZ)
@@ -94,6 +115,7 @@ void adc_isr(void)
       k=0;
     }
     //计算最小值，得到阈值
+//    if(doGetThrehold)
     threhold=getThrehold(voltage1[conversionCount]);
 
     //阈值比较，过滤输出脉冲
@@ -101,17 +123,22 @@ void adc_isr(void)
         threholdCount++;
     }else{
         threholdCount=0;
+
     }
     if(threholdCount>5){
         GpioDataRegs.GPASET.bit.GPIO0=1;
+//        GpioDataRegs.GPCSET.bit.GPIO79=1;
+//        doGetThrehold=0;
         //获取水滴信号起点
     }else if(threholdCount==0){
         GpioDataRegs.GPACLEAR.bit.GPIO0=1;
-
+//        GpioDataRegs.GPCCLEAR.bit.GPIO79=1;
+//        doGetThrehold=1;
+        //获取水滴信号终点
     }
 
     //清空缓存区
-    if(conversionCount == bufferSize){
+    if(conversionCount==bufferSize){
         conversionCount = 0;
         k++;
     }
@@ -136,23 +163,29 @@ void timer_isr(){
 }
 
 
-float32 getThrehold(float32 V_IN){
+float getThrehold(float V_IN){
 
     //每隔一个缓存周期更新一下比较基准值，跟踪电压
     if(conversionCount==0){
-        //V1和V2是每隔3000个采样点取值，因为这样同时取到波峰概率小
+        //V1和V2是每隔600个采样点取值，因为这样同时取到波峰概率小
         //如果V1和V2在隔这么远取值还相差不大，说明大概率是低电平
         //把V1和V2更低的那个更新为当前基准值
         if(abs(V1-V2)<50)
         cmpValue=V1<V2? V1:V2;
-        sum=0;
+        sumCmpValue=0;
         i=0;
     }
-    sum+=V_IN<cmpValue? V_IN:cmpValue;//比较当前电压和基准值
+
+    sumCmpValue+=V_IN<cmpValue? V_IN:cmpValue; //取平均值，过滤骤变点
     i++;
 
-    return (sum/i)+filteringValue;
-
+    return (sumCmpValue/i)+filteringValue;
 }
 
 
+void ecap_isr(){
+
+    wPeriod+=ECap2Regs.CAP3-ECap2Regs.CAP1;
+    PieCtrlRegs.PIEACK.bit.ACK4 = 1; //第四组已经响应中断
+    ECap2Regs.ECCLR.all = 0xFFFF; //将所有中断清除
+}

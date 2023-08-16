@@ -16,6 +16,7 @@ ORDERED_OBJS += \
 "./SRC/DSP2833x_CodeStartBranch.obj" \
 "./SRC/DSP2833x_CpuTimers.obj" \
 "./SRC/DSP2833x_DefaultIsr.obj" \
+"./SRC/DSP2833x_ECap.obj" \
 "./SRC/DSP2833x_EPwm.obj" \
 "./SRC/DSP2833x_GlobalVariableDefs.obj" \
 "./SRC/DSP2833x_Gpio.obj" \
@@ -176,8 +177,8 @@ AD_DOUBLE.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "main.obj" "SRC\DSP2833x_ADC_cal.obj" "SRC\DSP2833x_Adc.obj" "SRC\DSP2833x_CodeStartBranch.obj" "SRC\DSP2833x_CpuTimers.obj" "SRC\DSP2833x_DefaultIsr.obj" "SRC\DSP2833x_EPwm.obj" "SRC\DSP2833x_GlobalVariableDefs.obj" "SRC\DSP2833x_Gpio.obj" "SRC\DSP2833x_PieCtrl.obj" "SRC\DSP2833x_PieVect.obj" "SRC\DSP2833x_SysCtrl.obj" "SRC\DSP2833x_Xintf.obj" "SRC\DSP2833x_usDelay.obj" "SRC\ePWM_Setup.obj" 
-	-$(RM) "main.d" "SRC\DSP2833x_Adc.d" "SRC\DSP2833x_CpuTimers.d" "SRC\DSP2833x_DefaultIsr.d" "SRC\DSP2833x_EPwm.d" "SRC\DSP2833x_GlobalVariableDefs.d" "SRC\DSP2833x_Gpio.d" "SRC\DSP2833x_PieCtrl.d" "SRC\DSP2833x_PieVect.d" "SRC\DSP2833x_SysCtrl.d" "SRC\DSP2833x_Xintf.d" "SRC\ePWM_Setup.d" 
+	-$(RM) "main.obj" "SRC\DSP2833x_ADC_cal.obj" "SRC\DSP2833x_Adc.obj" "SRC\DSP2833x_CodeStartBranch.obj" "SRC\DSP2833x_CpuTimers.obj" "SRC\DSP2833x_DefaultIsr.obj" "SRC\DSP2833x_ECap.obj" "SRC\DSP2833x_EPwm.obj" "SRC\DSP2833x_GlobalVariableDefs.obj" "SRC\DSP2833x_Gpio.obj" "SRC\DSP2833x_PieCtrl.obj" "SRC\DSP2833x_PieVect.obj" "SRC\DSP2833x_SysCtrl.obj" "SRC\DSP2833x_Xintf.obj" "SRC\DSP2833x_usDelay.obj" "SRC\ePWM_Setup.obj" 
+	-$(RM) "main.d" "SRC\DSP2833x_Adc.d" "SRC\DSP2833x_CpuTimers.d" "SRC\DSP2833x_DefaultIsr.d" "SRC\DSP2833x_ECap.d" "SRC\DSP2833x_EPwm.d" "SRC\DSP2833x_GlobalVariableDefs.d" "SRC\DSP2833x_Gpio.d" "SRC\DSP2833x_PieCtrl.d" "SRC\DSP2833x_PieVect.d" "SRC\DSP2833x_SysCtrl.d" "SRC\DSP2833x_Xintf.d" "SRC\ePWM_Setup.d" 
 	-$(RM) "SRC\DSP2833x_ADC_cal.d" "SRC\DSP2833x_CodeStartBranch.d" "SRC\DSP2833x_usDelay.d" 
 	-@echo 'Finished clean'
 	-@echo ' '

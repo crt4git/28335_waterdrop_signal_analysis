@@ -14,6 +14,7 @@ C_SRCS += \
 ../SRC/DSP2833x_Adc.c \
 ../SRC/DSP2833x_CpuTimers.c \
 ../SRC/DSP2833x_DefaultIsr.c \
+../SRC/DSP2833x_ECap.c \
 ../SRC/DSP2833x_EPwm.c \
 ../SRC/DSP2833x_GlobalVariableDefs.c \
 ../SRC/DSP2833x_Gpio.c \
@@ -27,6 +28,7 @@ C_DEPS += \
 ./SRC/DSP2833x_Adc.d \
 ./SRC/DSP2833x_CpuTimers.d \
 ./SRC/DSP2833x_DefaultIsr.d \
+./SRC/DSP2833x_ECap.d \
 ./SRC/DSP2833x_EPwm.d \
 ./SRC/DSP2833x_GlobalVariableDefs.d \
 ./SRC/DSP2833x_Gpio.d \
@@ -42,6 +44,7 @@ OBJS += \
 ./SRC/DSP2833x_CodeStartBranch.obj \
 ./SRC/DSP2833x_CpuTimers.obj \
 ./SRC/DSP2833x_DefaultIsr.obj \
+./SRC/DSP2833x_ECap.obj \
 ./SRC/DSP2833x_EPwm.obj \
 ./SRC/DSP2833x_GlobalVariableDefs.obj \
 ./SRC/DSP2833x_Gpio.obj \
@@ -63,6 +66,7 @@ OBJS__QUOTED += \
 "SRC\DSP2833x_CodeStartBranch.obj" \
 "SRC\DSP2833x_CpuTimers.obj" \
 "SRC\DSP2833x_DefaultIsr.obj" \
+"SRC\DSP2833x_ECap.obj" \
 "SRC\DSP2833x_EPwm.obj" \
 "SRC\DSP2833x_GlobalVariableDefs.obj" \
 "SRC\DSP2833x_Gpio.obj" \
@@ -77,6 +81,7 @@ C_DEPS__QUOTED += \
 "SRC\DSP2833x_Adc.d" \
 "SRC\DSP2833x_CpuTimers.d" \
 "SRC\DSP2833x_DefaultIsr.d" \
+"SRC\DSP2833x_ECap.d" \
 "SRC\DSP2833x_EPwm.d" \
 "SRC\DSP2833x_GlobalVariableDefs.d" \
 "SRC\DSP2833x_Gpio.d" \
@@ -100,6 +105,7 @@ C_SRCS__QUOTED += \
 "../SRC/DSP2833x_Adc.c" \
 "../SRC/DSP2833x_CpuTimers.c" \
 "../SRC/DSP2833x_DefaultIsr.c" \
+"../SRC/DSP2833x_ECap.c" \
 "../SRC/DSP2833x_EPwm.c" \
 "../SRC/DSP2833x_GlobalVariableDefs.c" \
 "../SRC/DSP2833x_Gpio.c" \
